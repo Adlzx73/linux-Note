@@ -323,4 +323,3 @@ systemctl enable smb nmb
 **Windows:** `\\172.16.8.8\Team_Share`  
 **Linux:** `smbclient //172.16.8.8/Team_Share -U %`
 
-```
