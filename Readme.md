@@ -368,40 +368,65 @@ chmod -R 770 /home/TeamProjects
 
 Share `/home/TeamProjects` with Windows/Linux clients.
 
-### a) Configuration
+### a) Configure Samba
 
-**Install Samba:**
+**1. Install Samba:**
 ```bash
 dnf install samba samba-client -y
 ```
 
-**Edit `/etc/samba/smb.conf`:**
-Append to end of file:
+**2. Edit `/etc/samba/smb.conf`:**
+```bash
+nano /etc/samba/smb.conf
+```
+Append the following block to the end of the file. Note the `guest ok` parameter:
+
 ```ini
 [Team_Share]
     path = /home/TeamProjects
-    guest ok = yes
-    writable = yes
     browseable = yes
+    writable = yes
+    guest ok = yes
+    read only = no
+    create mask = 0777
+    directory mask = 0777
 ```
 
-### b) Start Services
+### b) Option: Enable Full Anonymous Access
 
+By default, Linux permissions set in Task 6 (`770`) block guests. To allow the "Guest" user (mapped to `nobody`) to access the files, you must relax the directory permissions.
+
+**1. Update Directory Permissions:**
+Give "Read, Write, and Execute" permissions to "Others" (Guest):
 ```bash
-# SELinux Context (Critical for Access)
-chcon -t samba_share_t /home/TeamProjects
+chmod -R 777 /home/TeamProjects
+```
 
-# Firewall
+**2. Set SELinux Context (Critical):**
+Allow Samba processes to read/write to this folder:
+```bash
+chcon -t samba_share_t /home/TeamProjects
+```
+
+### c) Start Services & Firewall
+
+**1. Configure Firewall:**
+```bash
 firewall-cmd --add-service=samba --permanent
 firewall-cmd --reload
+```
 
-# Start Services
+**2. Start Services:**
+```bash
 systemctl start smb nmb
 systemctl enable smb nmb
 ```
 
-### c) Access Testing
+### d) Access Testing
 
-**Windows:** `\\172.16.8.8\Team_Share`  
-**Linux:** `smbclient //172.16.8.8/Team_Share -U %`
-
+*   **Windows:** Open File Explorer and type `\\172.16.8.8\Team_Share`. You should enter without a password and be able to open `readme.txt`.
+*   **Linux:**
+    ```bash
+    # Connect as anonymous (no password required, just press Enter)
+    smbclient //172.16.8.8/Team_Share -U %
+    ```
