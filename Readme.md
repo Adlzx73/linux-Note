@@ -205,15 +205,21 @@ systemctl enable vsftpd
 
 ## 4. Mail Server (Postfix + Dovecot)
 
-### a) Postfix (SMTP)
+Configure Postfix for SMTP and Dovecot for POP3/IMAP with SASL authentication.
 
-**Install:**
+### a) Configure Postfix (SMTP)
+
+**1. Install Postfix:**
 ```bash
 dnf install postfix -y
 ```
 
-**Edit `/etc/postfix/main.cf`:**
-```conf
+**2. Edit `/etc/postfix/main.cf`:**
+```bash
+nano /etc/postfix/main.cf
+```
+First, ensure the basic settings are correct (around line 75-120 and 419):
+```ini
 myhostname = sysadmin08.unitechlab.net
 mydomain = unitechlab.net
 myorigin = $mydomain
@@ -222,31 +228,106 @@ mynetworks = 127.0.0.0/8, 172.16.8.0/24
 home_mailbox = Maildir/
 ```
 
-### b) Dovecot (POP3/IMAP)
+**3. Add SASL and Security Settings:**
+Scroll to the very bottom of `/etc/postfix/main.cf` and paste the following block:
+```ini
+disable_vrfy_command = yes
+smtpd_helo_required = yes
+message_size_limit = 10240000
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_security_options = noanonymous
+smtpd_sasl_local_domain = $myhostname
+smtpd_recipient_restrictions = permit_mynetworks, permit_auth_destination, permit_sasl_authenticated, reject
+```
 
-**Install:**
+### b) Configure Dovecot (POP3/IMAP)
+
+**1. Install Dovecot:**
 ```bash
 dnf install dovecot -y
 ```
 
-**Edit `/etc/dovecot/conf.d/10-mail.conf`:**
-```conf
-mail_location = maildir:~/Maildir
+**2. Edit `/etc/dovecot/dovecot.conf`:**
+```bash
+nano /etc/dovecot/dovecot.conf
 ```
+Find the `listen` line (around line 30) and ensure it is set to:
+```ini
+listen = *
+```
+
+**3. Edit `/etc/dovecot/conf.d/10-auth.conf`:**
+```bash
+nano /etc/dovecot/conf.d/10-auth.conf
+```
+*   **Line 10:** Uncomment and set:
+    ```ini
+    disable_plaintext_auth = no
+    ```
+*   **Line 100:** Change `auth_mechanisms` to:
+    ```ini
+    auth_mechanisms = plain login
+    ```
+
+**4. Edit `/etc/dovecot/conf.d/10-mail.conf`:**
+```bash
+nano /etc/dovecot/conf.d/10-mail.conf
+```
+*   **Line 30:** Uncomment and set:
+    ```ini
+    mail_location = maildir:~/Maildir
+    ```
+
+**5. Edit `/etc/dovecot/conf.d/10-master.conf`:**
+```bash
+nano /etc/dovecot/conf.d/10-master.conf
+```
+Scroll down to the `service auth` block (around line 95). Inside this block, find the `unix_listener` section (lines 107-109) and modify it to look exactly like this:
+```ini
+service auth {
+  # ... other lines ...
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0666
+    user = postfix
+    group = postfix
+  }
+  # ... other lines ...
+}
+```
+
+**6. Edit `/etc/dovecot/conf.d/10-ssl.conf`:**
+```bash
+nano /etc/dovecot/conf.d/10-ssl.conf
+```
+*   **Line 8:** Ensure SSL is enabled:
+    ```ini
+    ssl = yes
+    ```
 
 ### c) Start Services & Firewall
 
+**1. Configure Firewall:**
 ```bash
 firewall-cmd --add-service={smtp,pop3,imap} --permanent
 firewall-cmd --reload
+```
 
-systemctl start postfix
+**2. Enable and Start Services:**
+```bash
+systemctl restart postfix
 systemctl enable postfix
-systemctl start dovecot
+systemctl restart dovecot
 systemctl enable dovecot
 ```
 
----
+**3. Verification:**
+Check if services are running and listening:
+```bash
+systemctl status postfix dovecot
+ss -tunlp | grep -E '25|110|143|587'
+```
 
 ## 5. User & Group Management
 
