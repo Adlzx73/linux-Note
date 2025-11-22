@@ -354,7 +354,8 @@ Create a shared project folder with restricted permissions.
 mkdir /home/TeamProjects
 
 # Create File
-echo "Full Name: [YOUR NAME], Student ID: [YOUR ID]" > /home/TeamProjects/readme.txt
+nano /home/TeamProjects/readme.txt
+(put your fullname and student ID here)
 
 # Set Permissions (Group ownership and Access Control)
 chown -R root:TeamLab /home/TeamProjects
