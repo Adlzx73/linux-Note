@@ -1,0 +1,34 @@
+nano /etc/postfix/main.cf
+
+#line 95: uncomment and specify hostname
+myhostname = mail.(hostname) (ex:mail.dfkSN.ikm) 
+
+#line 102: uncomment and specify domain name
+mydomain = (domain name) (ex:dfkSN.ikm)
+
+#line 118: uncomment
+myorigin = $mydomain
+
+#line 132: uncomment
+inet_interfaces = all
+
+#line 135: comment
+inet_interfaces = localhost
+
+#line 138: change it to IPv4
+inet_protocols = ipv4
+
+#line 183: comment
+mydestination = $myhostname, localhost.$mydomain, localhost
+
+#line 184: uncomment
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+
+#line 283: uncomment and specify your local network
+mynetworks = (your local network), 127.0.0.0/8   (ex: 192.168.0.0/24)
+
+#line 438: uncomment (use Maildir)
+home_mailbox = Maildir/
+
+#line 593: add
+smtpd_banner = $myhostname ESMTP
