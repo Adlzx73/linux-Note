@@ -205,7 +205,7 @@ systemctl enable vsftpd
 
 ## 4. Mail Server (Postfix + Dovecot)
 
-Configure Postfix for SMTP and Dovecot for POP3/IMAP with SASL authentication.
+Configure Postfix for SMTP and Dovecot for POP3/IMAP.
 
 ### a) Configure Postfix (SMTP)
 
@@ -218,18 +218,55 @@ dnf install postfix -y
 ```bash
 nano /etc/postfix/main.cf
 ```
-First, ensure the basic settings are correct (around line 75-120 and 419):
-```ini
-myhostname = sysadmin08.unitechlab.net
-mydomain = unitechlab.net
-myorigin = $mydomain
-inet_interfaces = all
-mynetworks = 127.0.0.0/8, 172.16.8.0/24
-home_mailbox = Maildir/
-```
+Locate and modify the following lines (line numbers are approximate):
 
-**3. Add SASL and Security Settings:**
-Scroll to the very bottom of `/etc/postfix/main.cf` and paste the following block:
+*   **Line 95:** Uncomment and set hostname:
+    ```ini
+    myhostname = sysadmin08.unitechlab.net
+    ```
+*   **Line 102:** Uncomment and set domain:
+    ```ini
+    mydomain = unitechlab.net
+    ```
+*   **Line 118:** Uncomment origin:
+    ```ini
+    myorigin = $mydomain
+    ```
+*   **Line 132:** Uncomment interfaces:
+    ```ini
+    inet_interfaces = all
+    ```
+*   **Line 135:** Comment out localhost binding:
+    ```ini
+    #inet_interfaces = localhost
+    ```
+*   **Line 138:** Change protocol to IPv4:
+    ```ini
+    inet_protocols = ipv4
+    ```
+*   **Line 183:** Comment out the short destination line:
+    ```ini
+    #mydestination = $myhostname, localhost.$mydomain, localhost
+    ```
+*   **Line 184:** Uncomment the long destination line:
+    ```ini
+    mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+    ```
+*   **Line 283:** Uncomment and set your network:
+    ```ini
+    mynetworks = 172.16.8.0/24, 127.0.0.0/8
+    ```
+*   **Line 438:** Uncomment to use Maildir:
+    ```ini
+    home_mailbox = Maildir/
+    ```
+*   **Line 593:** Add the banner:
+    ```ini
+    smtpd_banner = $myhostname ESMTP
+    ```
+
+**3. Add SASL/Dovecot Auth Settings:**
+Scroll to the very bottom of the file and paste this block to enable authentication:
 ```ini
 disable_vrfy_command = yes
 smtpd_helo_required = yes
@@ -253,20 +290,20 @@ dnf install dovecot -y
 ```bash
 nano /etc/dovecot/dovecot.conf
 ```
-Find the `listen` line (around line 30) and ensure it is set to:
-```ini
-listen = *
-```
+*   **Line 30:** Uncomment/Set:
+    ```ini
+    listen = *
+    ```
 
 **3. Edit `/etc/dovecot/conf.d/10-auth.conf`:**
 ```bash
 nano /etc/dovecot/conf.d/10-auth.conf
 ```
-*   **Line 10:** Uncomment and set:
+*   **Line 10:** Uncomment:
     ```ini
     disable_plaintext_auth = no
     ```
-*   **Line 100:** Change `auth_mechanisms` to:
+*   **Line 100:** Change to:
     ```ini
     auth_mechanisms = plain login
     ```
@@ -275,7 +312,7 @@ nano /etc/dovecot/conf.d/10-auth.conf
 ```bash
 nano /etc/dovecot/conf.d/10-mail.conf
 ```
-*   **Line 30:** Uncomment and set:
+*   **Line 30:** Uncomment:
     ```ini
     mail_location = maildir:~/Maildir
     ```
@@ -284,29 +321,25 @@ nano /etc/dovecot/conf.d/10-mail.conf
 ```bash
 nano /etc/dovecot/conf.d/10-master.conf
 ```
-Scroll down to the `service auth` block (around line 95). Inside this block, find the `unix_listener` section (lines 107-109) and modify it to look exactly like this:
+Find `service auth` (approx line 95), then edit the `unix_listener` block (lines 107-109) to match this:
 ```ini
-service auth {
-  # ... other lines ...
   unix_listener /var/spool/postfix/private/auth {
     mode = 0666
     user = postfix
     group = postfix
   }
-  # ... other lines ...
-}
 ```
 
 **6. Edit `/etc/dovecot/conf.d/10-ssl.conf`:**
 ```bash
 nano /etc/dovecot/conf.d/10-ssl.conf
 ```
-*   **Line 8:** Ensure SSL is enabled:
+*   **Line 8:** Set:
     ```ini
     ssl = yes
     ```
 
-### c) Start Services & Firewall
+### c) Start Services & Verification
 
 **1. Configure Firewall:**
 ```bash
@@ -314,19 +347,16 @@ firewall-cmd --add-service={smtp,pop3,imap} --permanent
 firewall-cmd --reload
 ```
 
-**2. Enable and Start Services:**
+**2. Start Services:**
 ```bash
-systemctl restart postfix
-systemctl enable postfix
-systemctl restart dovecot
-systemctl enable dovecot
+systemctl restart postfix dovecot
+systemctl enable postfix dovecot
 ```
 
-**3. Verification:**
-Check if services are running and listening:
+**3. Check Status:**
 ```bash
+# Verify services are running
 systemctl status postfix dovecot
-ss -tunlp | grep -E '25|110|143|587'
 ```
 
 ## 5. User & Group Management
