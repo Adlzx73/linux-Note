@@ -162,43 +162,98 @@ systemctl enable dhcpd
 
 ## 3. FTP Server (Vsftpd)
 
-Secure FTP configuration restricting users to home directories.
+Configure specific FTP settings, chroot lists, and firewall rules as per the provided configuration images.
 
-### a) Configuration
+### a) Installation & Configuration
 
-**Install Vsftpd:**
+**1. Install Vsftpd:**
 ```bash
-dnf install vsftpd -y
+dnf -y install vsftpd
 ```
 
-**Edit `/etc/vsftpd/vsftpd.conf`:**
-```conf
+**2. Configure `/etc/vsftpd/vsftpd.conf`:**
+```bash
+nano /etc/vsftpd/vsftpd.conf
+```
+Locate and change (or add) the following parameters to match these exact values:
+
+```ini
+# Line 12: Disable anonymous
 anonymous_enable=NO
-local_enable=YES
-write_enable=YES
+
+# Line 82, 83: Allow ASCII mode
+ascii_upload_enable=YES
+ascii_download_enable=YES
+
+# Line 100, 101: Enable chroot and list
 chroot_local_user=YES
-allow_writeable_chroot=YES
+chroot_list_enable=YES
+
+# Line 103: Specify chroot list file
+chroot_list_file=/etc/vsftpd/chroot_list
+
+# Line 109: Enable recursive list
+ls_recurse_enable=YES
+
+# Line 114: Listen settings (Set NO if listening on IPv6 too)
+listen=NO
+
+# Line 123: IPv6 Listen settings
+listen_ipv6=YES
+
+# Add the following lines to the end of the file:
+local_root=public_html
+use_localtime=YES
+seccomp_sandbox=NO
 ```
 
-**Create User:**
+**3. Configure Chroot List:**
+Create the exception list file. Users in this file will be allowed to move out of their home directory.
+```bash
+nano /etc/vsftpd/chroot_list
+```
+Add the username inside this file:
+```text
+ftpuser
+```
+
+### b) User Account Setup
+
+**1. Create User:**
+*Note: The images used 'ikmbest', but we use 'ftpuser' to match the Lab PDF requirements.*
 ```bash
 useradd ftpuser
-echo "P@ssw0rd" | passwd --stdin ftpuser
+passwd ftpuser
+# Enter password: P@ssw0rd
+# Re-type: P@ssw0rd
 ```
 
-### b) Start Services
-
+**2. Create Local Root Directory:**
+Since we set `local_root=public_html` in the config, we must create this folder inside the user's home, or login will fail.
 ```bash
-# Firewall
-firewall-cmd --add-service=ftp --permanent
-firewall-cmd --reload
+mkdir /home/ftpuser/public_html
+chown ftpuser:ftpuser /home/ftpuser/public_html
+chmod 755 /home/ftpuser/public_html
+```
 
-# SELinux (Important)
+### c) Start Services & Security
+
+**1. Enable Service:**
+```bash
+systemctl enable --now vsftpd
+```
+
+**2. Configure SELinux:**
+```bash
 setsebool -P ftpd_full_access on
+```
 
-# Start Service
-systemctl start vsftpd
-systemctl enable vsftpd
+**3. Configure Firewall:**
+```bash
+firewall-cmd --add-service=ftp
+firewall-cmd --runtime-to-permanent
+firewall-cmd --reload
+firewall-cmd --zone=public --list-all
 ```
 
 ---
