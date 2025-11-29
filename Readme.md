@@ -445,6 +445,28 @@ systemctl enable postfix dovecot
 systemctl status postfix dovecot
 ```
 
+### d) Show Mailbox Directory
+
+The `Maildir/` directory is created automatically when an email is first delivered.
+
+**1. Create a user to check:**
+```bash
+useradd mailuser
+passwd mailuser
+```
+
+**2. Trigger directory creation (Send a test email):**
+```bash
+# Send a test email to localhost to force creation
+echo "Hello" | mail -s "Test Email" mailuser@unitechlab.net
+```
+*(Note: If the `mail` command is not found, install it with `dnf install mailx -y`)*
+
+**3. Verify the directory exists:**
+```bash
+ls -ld /home/mailuser/Maildir/
+```
+
 ## 5. User & Group Management
 
 ```bash
@@ -551,3 +573,9 @@ systemctl enable smb nmb
     **Option B: Login as User**
     *   **Username:** `user1`
     *   **Password:** (The password you set in step 'b' using `smbpasswd`)
+
+**Linux Client:**
+```bash
+# Connect as anonymous (hit Enter when asked for password)
+smbclient //172.16.8.8/Team_Share -U %
+```
