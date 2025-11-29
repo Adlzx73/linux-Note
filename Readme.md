@@ -551,4 +551,3 @@ systemctl enable smb nmb
     **Option B: Login as User**
     *   **Username:** `user1`
     *   **Password:** (The password you set in step 'b' using `smbpasswd`)
-```
