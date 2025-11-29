@@ -482,7 +482,7 @@ chmod -R 770 /home/TeamProjects
 
 ## 7. Samba Shared Folder
 
-Share `/home/TeamProjects` with Windows/Linux clients, allowing full Guest (Anonymous) Read/Write access.
+Share `/home/TeamProjects` with Windows/Linux clients.
 
 ### a) Install and Configure
 
@@ -496,7 +496,6 @@ dnf install samba samba-client -y
 nano /etc/samba/smb.conf
 ```
 Append the following block to the end of the file:
-
 ```ini
 [Team_Share]
     path = /home/TeamProjects
@@ -508,45 +507,48 @@ Append the following block to the end of the file:
     directory mask = 0777
 ```
 
-### b) Fix Permissions & Security (Crucial)
+### b) Setup Samba User Password
+Although Linux users (`user1`) exist (from Task 5), they cannot access Samba until you add them to the Samba password database.
 
-To allow "Guest" users (who are not part of the `TeamLab` group) to access and write files, you must relax the Linux file system permissions and configure SELinux.
-
-**1. Set Directory Permissions (Fix "Access Denied"):**
-Allow Read/Write/Execute for everyone (Owner, Group, and Others/Guests):
 ```bash
-chmod -R 777 /home/TeamProjects
+# Set a Samba password for user1 (You will be prompted to type it twice)
+smbpasswd -a user1
+
+# (Optional) Set one for root if you want admin access
+smbpasswd -a root
 ```
 
-**2. Set SELinux Context:**
-Tell SELinux this directory is allowed to be shared via Samba:
+### c) Fix Permissions & Security
+To allow both Guests and Users to write files:
+
 ```bash
+# 1. Set Permissions (Read/Write for Everyone)
+chmod -R 777 /home/TeamProjects
+
+# 2. Set SELinux Context
 chcon -R -t samba_share_t /home/TeamProjects
 ```
 
-### c) Start Services & Firewall
+### d) Start Services & Firewall
 
-**1. Configure Firewall:**
 ```bash
 firewall-cmd --add-service=samba --permanent
 firewall-cmd --reload
-```
 
-**2. Start Services:**
-```bash
 systemctl restart smb nmb
 systemctl enable smb nmb
 ```
 
-### d) Access Testing
+### e) Access Testing (Windows Client)
 
-**Windows Client:**
-1.  Open File Explorer.
-2.  Type `\\172.16.8.8\Team_Share` in the address bar.
-3.  You should be able to open `readme.txt` and create new files without a password.
+1.  Open File Explorer and type `\\172.16.8.8\Team_Share`.
+2.  **If prompted for a Username/Password:**
 
-**Linux Client:**
-```bash
-# Connect as anonymous (hit Enter when asked for password)
-smbclient //172.16.8.8/Team_Share -U %
+    **Option A: Login as Guest**
+    *   **Username:** `Guest`
+    *   **Password:** (Leave Blank)
+
+    **Option B: Login as User**
+    *   **Username:** `user1`
+    *   **Password:** (The password you set in step 'b' using `smbpasswd`)
 ```
