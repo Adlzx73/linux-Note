@@ -256,6 +256,37 @@ firewall-cmd --reload
 firewall-cmd --zone=public --list-all
 ```
 
+### d) Access Testing from Client
+
+**Method 1: Windows File Explorer (Visual)**
+1.  Open **File Explorer** on your Windows client.
+2.  In the address bar at the top, type:
+    ```text
+    ftp://172.16.8.8
+    ```
+3.  Press **Enter**.
+4.  A login prompt will appear:
+    *   **User:** `ftpuser`
+    *   **Password:** `P@ssw0rd`
+5.  You should successfully log in and see the contents of the `public_html` folder.
+
+**Method 2: Command Line (Windows CMD or Linux)**
+1.  Open Command Prompt (Windows) or Terminal (Linux).
+2.  Connect to the server:
+    ```bash
+    ftp 172.16.8.8
+    ```
+3.  Enter credentials when prompted:
+    *   **Name:** `ftpuser`
+    *   **Password:** `P@ssw0rd`
+4.  If successful, you will see `230 Login successful`.
+5.  Run commands to test:
+    ```bash
+    pwd   # Check current directory (should be /)
+    ls    # List files
+    bye   # Exit
+    ```
+
 ---
 
 ## 4. Mail Server (Postfix + Dovecot)
